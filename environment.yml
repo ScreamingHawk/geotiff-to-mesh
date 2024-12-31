@@ -1,0 +1,9 @@
+name: geotiff-to-mesh
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - gdal>=3.6.0
+  - numpy>=1.26.4
+  - numpy-stl>=3.2.0
