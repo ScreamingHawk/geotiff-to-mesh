@@ -12,12 +12,25 @@ conda env create -f environment.yml
 
 # Activate the conda environment
 conda activate geotiff-to-mesh
+
+# Install pre-commit hooks
+pre-commit install
 ```
 
 ## Usage
 
 ```bash
 python geotiff-to-mesh.py input.tif output.stl
+```
+
+## Development
+
+This project uses [pre-commit](https://pre-commit.com) hooks to maintain code quality. The Black formatter will automatically run on your Python files when you commit changes.
+
+To manually run formatting on all files:
+
+```bash
+pre-commit run --all-files
 ```
 
 ## License
