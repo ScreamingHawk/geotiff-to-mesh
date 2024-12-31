@@ -19,9 +19,18 @@ pre-commit install
 
 ## Obtaining elevation data from LINZ
 
-You can download elevation data from [Toitu Te Whenua (aka Land Information New Zealand aka LINZ)](https://data.linz.govt.nz/group/national-elevation/data/). Ensure that "National Elevation" is selected as the "Group" on the right hand side. Find your desired location and select the map you want.
+You can download elevation data from [Toitu Te Whenua (aka Land Information New Zealand aka LINZ)](https://data.linz.govt.nz/group/national-elevation/data/).
 
-At the time of writing, the elevation data does not display on the map overview. From the elevation data panel, select "Export" and then "Zoom to Crop" to limit your exported area. Then select "Download" to download the GeoTIFF files and metadata.
+1. Ensure that "National Elevation" is selected as the "Group" on the right hand side
+2. Find your desired location and select the map you want
+3. From the elevation data panel, select "Export" and then "Zoom to Crop"
+4. Move the map to the desired area for exporting
+5. Select "Download" to download the GeoTIFF files and metadata
+
+> [!TIP]
+> At the time of writing, the elevation data does not display on the map overview.
+
+### Required Files
 
 The downloaded files should include:
 
@@ -31,7 +40,7 @@ The downloaded files should include:
 
 Keep all files in the same directory for processing.
 
-For an example, extract a 7zip file in the `samples` directory.
+For an example, extract a [7zip](https://www.7-zip.org/) file in the `samples` directory.
 
 ## Usage
 
@@ -44,6 +53,9 @@ python geotiff-to-mesh.py input_directory output.stl --granularity 0.05
 
 # Specify scale (e.g., 50% of original size)
 python geotiff-to-mesh.py input_directory output.stl --scale 0.5
+
+# Enable detailed debug output
+python geotiff-to-mesh.py input_directory output.stl --log-level DEBUG
 ```
 
 ### Parameters
@@ -51,7 +63,10 @@ python geotiff-to-mesh.py input_directory output.stl --scale 0.5
 - `input_directory`: Directory containing the GeoTIFF files
 - `output.stl`: Path for the output STL file
 - `--granularity`: Optional. Percentage of points to keep (0.0-1.0, default: 0.1 = 10%)
-- `--scale`: Optional. Scale factor for the output mesh (0.0-1.0, default: 1.0 = 100%)
+- `--scale`: Optional. Scale factor for the output mesh (0.0-1.0, default: 0.05 = 5%)
+- `--log-level`: Optional. Set logging verbosity (DEBUG, INFO, WARNING, ERROR, CRITICAL, default: INFO)
+
+### Processing Steps
 
 The script will:
 

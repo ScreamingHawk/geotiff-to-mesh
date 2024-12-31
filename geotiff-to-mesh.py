@@ -6,21 +6,24 @@ from tqdm import tqdm
 import logging
 import os
 import glob
-from scipy.interpolate import griddata
 
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
 
 # Enable GDAL exceptions
 gdal.UseExceptions()
 
 
+# Set up logging
+def setup_logging(log_level):
+    """Configure logging with specified level"""
+    logging.basicConfig(
+        level=log_level, format="%(asctime)s - %(levelname)s - %(message)s"
+    )
+    return logging.getLogger(__name__)
+
+
 def try_open_file(file_path):
     """Try to open a file with multiple possible extensions"""
-    logger.info(f"Attempting to open: {file_path}")
+    logger.debug(f"Attempting to open: {file_path}")
 
     dataset = gdal.Open(file_path, gdal.GA_ReadOnly)
     if dataset is not None:
@@ -30,7 +33,7 @@ def try_open_file(file_path):
 
 
 def read_tfw(tiff_path):
-    """Read and parse TFW file associated with a TIFF"""
+    """Read and parse world file (.tfw/.tifw) associated with a TIFF file."""
     # Try both .tfw and .tifw extensions
     tfw_path = tiff_path[:-4] + ".tfw"
     if not os.path.exists(tfw_path):
@@ -56,15 +59,16 @@ def read_tfw(tiff_path):
             "y_top_left": lines[5],
         }
 
-        logger.info("World File Contents:")
-        logger.info(f"Pixel Size (X): {world_file['x_pixel_size']:.6f}")
-        logger.info(f"Rotation Y: {world_file['y_rotation']:.6f}")
-        logger.info(f"Rotation X: {world_file['x_rotation']:.6f}")
-        logger.info(f"Pixel Size (Y): {world_file['y_pixel_size']:.6f}")
-        logger.info(f"Top Left X: {world_file['x_top_left']:.6f}")
-        logger.info(f"Top Left Y: {world_file['y_top_left']:.6f}")
+        # Move detailed world file info to DEBUG
+        logger.debug("World File Contents:")
+        logger.debug(f"Pixel Size (X): {world_file['x_pixel_size']:.6f}")
+        logger.debug(f"Rotation Y: {world_file['y_rotation']:.6f}")
+        logger.debug(f"Rotation X: {world_file['x_rotation']:.6f}")
+        logger.debug(f"Pixel Size (Y): {world_file['y_pixel_size']:.6f}")
+        logger.debug(f"Top Left X: {world_file['x_top_left']:.6f}")
+        logger.debug(f"Top Left Y: {world_file['y_top_left']:.6f}")
 
-        # Calculate approximate coverage area
+        # Calculate coverage area
         dataset = gdal.Open(tiff_path, gdal.GA_ReadOnly)
         if dataset:
             width = dataset.RasterXSize
@@ -78,26 +82,26 @@ def read_tfw(tiff_path):
                 height * world_file["y_pixel_size"]
             )
 
-            logger.info("\nCoverage Area:")
-            logger.info(
+            logger.debug("\nCoverage Area:")
+            logger.debug(
                 f"Top Left: ({world_file['x_top_left']:.6f}, {world_file['y_top_left']:.6f})"
             )
-            logger.info(f"Bottom Right: ({x_bottom_right:.6f}, {y_bottom_right:.6f})")
+            logger.debug(f"Bottom Right: ({x_bottom_right:.6f}, {y_bottom_right:.6f})")
 
-            # If these appear to be lat/lon coordinates
+            # Move coordinate system info to DEBUG
             if (
                 abs(world_file["x_top_left"]) <= 180
                 and abs(world_file["y_top_left"]) <= 90
             ):
-                logger.info("\nCoordinates appear to be in lat/lon format")
-                logger.info(
+                logger.debug("\nCoordinates appear to be in lat/lon format")
+                logger.debug(
                     f"Coverage area: approximately {abs(x_bottom_right - world_file['x_top_left']):.2f}° x {abs(y_bottom_right - world_file['y_top_left']):.2f}°"
                 )
             else:
-                logger.info(
-                    "\nCoordinates appear to be in a projected coordinate system (e.g., meters)"
+                logger.debug(
+                    "\nCoordinates appear to be in a projected coordinate system"
                 )
-                logger.info(
+                logger.debug(
                     f"Coverage area: approximately {abs(x_bottom_right - world_file['x_top_left']):.2f} x {abs(y_bottom_right - world_file['y_top_left']):.2f} units"
                 )
 
@@ -113,7 +117,7 @@ def inspect_geotiff(file_path):
     # First read the world file if it exists
     world_file = read_tfw(file_path)
 
-    logger.info("\n--- TIFF Analysis ---")
+    logger.info("--- TIFF Analysis ---")
     dataset = try_open_file(file_path)
     if dataset is None:
         logger.error("Could not open file")
@@ -204,7 +208,7 @@ def visualize_file_grid(spatial_info):
         grid[y_idx][x_idx] = identifier
 
     # Debug information
-    logger.info("\nCoordinate Information:")
+    logger.info("--- Coordinate Information ---")
     logger.info(f"X coordinates: {unique_x}")
     logger.info(f"Y coordinates: {unique_y}")
 
@@ -212,7 +216,7 @@ def visualize_file_grid(spatial_info):
     max_length = max(len(cell) for row in grid for cell in row if cell != " ")
 
     # Print grid
-    logger.info("\nFile Grid Layout:")
+    logger.info("--- File Grid Layout ---")
     logger.info("+" + "-" * (len(unique_x) * (max_length + 3) - 1) + "+")
     for row in grid:
         logger.info("| " + " | ".join(cell.center(max_length) for cell in row) + " |")
@@ -367,7 +371,7 @@ def process_directory_to_mesh(input_dir, output_file, granularity=0.1, scale=0.0
             mesh_data.vectors[i][j] = all_vertices[f[j]]
 
     # Calculate and log mesh statistics
-    logger.info("\nMesh Statistics:")
+    logger.info("--- Mesh Statistics ---")
     logger.info(f"Total vertices: {len(all_vertices):,}")
     logger.info(f"Total faces: {len(all_faces):,}")
 
@@ -376,7 +380,7 @@ def process_directory_to_mesh(input_dir, output_file, granularity=0.1, scale=0.0
     max_coords = np.max(all_vertices, axis=0)
     dimensions = max_coords - min_coords
 
-    logger.info("\nBounding Box:")
+    logger.info("--- Bounding Box ---")
     logger.info(
         f"X range: {min_coords[0]:.2f} to {max_coords[0]:.2f} ({dimensions[0]:.2f} units)"
     )
@@ -390,15 +394,15 @@ def process_directory_to_mesh(input_dir, output_file, granularity=0.1, scale=0.0
     # Calculate file size estimate
     estimated_size_bytes = len(all_faces) * 50  # Approximate STL binary format size
     estimated_size_mb = estimated_size_bytes / (1024 * 1024)
-    logger.info(f"\nEstimated file size: {estimated_size_mb:.1f} MB")
+    logger.info("--- File Size ---")
+    logger.info(f"Estimated file size: {estimated_size_mb:.1f} MB")
 
-    logger.info(f"\nSaving combined mesh to {output_file}")
+    logger.info(f"Saving combined mesh to {output_file}")
     mesh_data.save(output_file)
 
-    # Get actual file size
     actual_size_mb = os.path.getsize(output_file) / (1024 * 1024)
     logger.info(f"Actual file size: {actual_size_mb:.1f} MB")
-    logger.info("Processing complete!")
+    logger.info("--- Processing complete! ---")
 
 
 def main():
@@ -421,6 +425,12 @@ def main():
         default=0.05,
         help="Scale factor for output mesh (0.0-1.0, default: 0.05 = 5%%)",
     )
+    parser.add_argument(
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default="INFO",
+        help="Set the logging level (default: INFO)",
+    )
     args = parser.parse_args()
 
     if not 0 < args.granularity <= 1:
@@ -428,11 +438,17 @@ def main():
     if not 0 < args.scale <= 1:
         parser.error("Scale must be between 0 and 1")
 
+    # Setup logging with specified level
+    global logger
+    logger = setup_logging(getattr(logging, args.log_level))
+
     try:
         process_directory_to_mesh(args.input, args.output, args.granularity, args.scale)
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error(f"Error: {e}")
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    exit(main())
